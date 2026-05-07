@@ -24,6 +24,6 @@ const startServer = async () => {
 startServer()
 
 app.use('/', (req, res) => {
-    return res.json("Hello world from Docker !!")
+    return res.json({message: "CI/CD Pipeline Connected !! 🚀"})
 })
 

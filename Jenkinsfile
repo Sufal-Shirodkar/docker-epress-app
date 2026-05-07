@@ -5,6 +5,7 @@ pipeline {
 
         stage('Clone') {
             steps {
+                git branch: 'development',
                 git 'https://github.com/Sufal-Shirodkar/docker-epress-app.git'
             }
         }

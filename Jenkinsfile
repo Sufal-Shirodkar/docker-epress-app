@@ -3,13 +3,6 @@ pipeline {
 
     stages {
 
-        stage('Clone') {
-            steps {
-                git branch: 'development',
-                git 'https://github.com/Sufal-Shirodkar/docker-epress-app.git'
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
                 sh 'docker build -t express-docker-app .'
@@ -24,7 +17,7 @@ pipeline {
 
         stage('Run with Docker Compose') {
             steps {
-                sh 'docker compose up -d --build'
+                sh 'docker compose up -d --build --force-recreate'
             }
         }
 
@@ -35,3 +28,4 @@ pipeline {
         }
     }
 }
+

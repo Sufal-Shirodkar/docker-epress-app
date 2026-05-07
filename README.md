@@ -1,6 +1,6 @@
 # Docker Express App
 
-A simple **Node.js + Express + MongoDB** application containerized with **Docker** and orchestrated using **Docker Compose**. This project demonstrates how to run a Node.js API alongside a MongoDB database, both running as separate containers that communicate over a shared Docker network.
+A simple **Node.js + Express + MongoDB** application containerized with **Docker**, orchestrated using **Docker Compose**, and continuously deployed via a **Jenkins CI/CD pipeline**. This project demonstrates how to run a Node.js API alongside a MongoDB database, both running as separate containers that communicate over a shared Docker network, and how to automate the build/deploy cycle with Jenkins.
 
 ---
 
@@ -11,6 +11,7 @@ A simple **Node.js + Express + MongoDB** application containerized with **Docker
 - **Mongoose** — MongoDB ODM
 - **MongoDB** — NoSQL database
 - **Docker & Docker Compose** — Containerization
+- **Jenkins** — CI/CD pipeline automation
 
 ---
 
@@ -23,6 +24,7 @@ docker-node/
 ├── .env                  # Environment variables (not committed)
 ├── .gitignore
 ├── Dockerfile            # Image definition for the Node app
+├── Jenkinsfile           # Jenkins CI/CD pipeline definition
 ├── app.js                # Express server entry point
 ├── docker-compose.yml    # Multi-container setup (app + mongo)
 ├── package.json
@@ -103,15 +105,64 @@ You can also see live logs for both the app and MongoDB directly inside VS Code:
 
 ## API Endpoints
 
-| Method | Endpoint | Description                  |
-| ------ | -------- | ---------------------------- |
-| GET    | `/`      | Returns a hello-world string |
+| Method | Endpoint | Description                       |
+| ------ | -------- | --------------------------------- |
+| GET    | `/`      | Returns a CI/CD confirmation JSON |
 
 Example response:
 
 ```json
-"Hello world from Docker !!"
+{ "message": "CI/CD Pipeline Connected !! 🚀" }
 ```
+
+---
+
+## CI/CD with Jenkins
+
+This project ships with a `Jenkinsfile` that defines a declarative pipeline. Every push to the configured branch triggers Jenkins to rebuild the Docker image, restart the containers, and clean up old images automatically.
+
+### Pipeline stages
+
+1. **Declarative: Checkout SCM** — pulls the latest code from GitHub
+2. **Build Docker Image** — runs `docker build -t express-docker-app .`
+3. **Stop Old Containers** — runs `docker compose down` to remove the previous deployment
+4. **Run with Docker Compose** — runs `docker compose up -d --build --force-recreate`
+5. **Cleanup** — runs `docker image prune -f` to remove dangling images
+
+### Setting up the pipeline in Jenkins
+
+1. In Jenkins, click **New Item → Pipeline** and name it `express-docker-app`.
+2. Under **Pipeline → Definition**, choose **Pipeline script from SCM**.
+3. Set **SCM** to `Git` and **Repository URL** to your GitHub repo.
+4. Set **Branch Specifier** to the branch you want Jenkins to track (e.g. `*/development`).
+5. Set **Script Path** to `Jenkinsfile`.
+6. Save and click **Build Now**.
+
+### macOS gotcha — `docker: command not found`
+
+When running Jenkins on macOS, the daemon does **not** inherit your shell's `PATH`, so it can't find Docker (which lives at `/usr/local/bin/docker` on Intel Macs or `/opt/homebrew/bin/docker` on Apple Silicon). The `Jenkinsfile` in this repo fixes this by prepending the Docker path to the pipeline's `PATH`:
+
+```groovy
+environment {
+    PATH = "/usr/local/bin:${env.PATH}"
+}
+```
+
+### Successful build
+
+After the fix, all stages turn green:
+
+![Jenkins pipeline success](screenshots/jenkins-pipeline-success.png)
+
+### Container deployed by Jenkins
+
+The `express-docker-app` container running in Docker Desktop after a successful pipeline run:
+
+![Docker Desktop after CI/CD deploy](screenshots/docker-desktop-cicd.png)
+
+### Live API response from the deployed app
+
+![Browser response from CI/CD deployed app](screenshots/cicd-browser-output.png)
 
 ---
 
@@ -141,6 +192,7 @@ docker-compose up --build
 - The **`app`** service is built from the local `Dockerfile`, exposes port `8000`, and depends on the `mongo` service.
 - The **`mongo`** service uses the official MongoDB image and persists data using a named volume (`mongo-data`) so your database survives container restarts.
 - Both services run on the same default network created by Docker Compose, allowing the app to reach MongoDB using the hostname `mongo`.
+- **Jenkins** watches the configured branch on GitHub. On every push it rebuilds the image, recreates the containers via Docker Compose, and prunes old images — giving you a fully automated deploy on every commit.
 
 ---
 

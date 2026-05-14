@@ -24,6 +24,6 @@ const startServer = async () => {
 startServer()
 
 app.use('/', (req, res) => {
-    return res.json({message: "CI/CD Pipeline Connected !! 🚀"})
+    return res.json({message: "CI/CD Pipeline Connected !! 🚀 Node.js and Express.js are working together"})
 })
 
